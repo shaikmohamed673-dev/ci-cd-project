@@ -1,0 +1,22 @@
+# Starts Jenkins as a container. Jenkins then builds and runs the demo app container.
+services:
+  jenkins:
+    build: ./jenkins
+    container_name: jenkins
+    user: root                          # learning setup: lets Jenkins use the Docker socket
+    ports:
+      - "8080:8080"                     # Jenkins web UI
+      - "50000:50000"                   # agent connections (for later)
+    volumes:
+      - jenkins_home:/var/jenkins_home  # keeps jobs/settings after restart
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - cicd-net
+    restart: unless-stopped
+
+networks:
+  cicd-net:
+    name: cicd-net
+
+volumes:
+  jenkins_home:
