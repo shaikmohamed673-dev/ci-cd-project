@@ -51,17 +51,28 @@ Developer ──push──> GitHub repo
 
 ---
 
-## 3. Prerequisites
+## 3. Linux prerequisites
 
-1. Install **Docker Desktop** (Windows/Mac) or **Docker Engine + Compose plugin** (Linux).
+This project is intended to run on a **Linux host** (Ubuntu or Debian recommended). It uses Linux containers, the Linux Docker socket, and Jenkins `sh` pipeline steps.
+
+1. Install **Docker Engine** and the **Docker Compose plugin** by following the [official instructions for your Linux distribution](https://docs.docker.com/engine/install/).
 2. Install **Git** and create a **GitHub** account.
-3. Check everything works:
+3. If you want to run the Python tests directly on the host, install **Python 3** and `python3-venv`. The main pipeline runs tests inside Docker and does not need host Python.
+4. Check everything works:
 
 ```bash
 docker --version
 docker compose version
 git --version
 ```
+
+On systemd-based Linux distributions, start Docker and enable it at boot:
+
+```bash
+sudo systemctl enable --now docker
+```
+
+If your account does not have permission to use Docker, prefix Docker commands with `sudo` or follow Docker's [Linux post-installation instructions](https://docs.docker.com/engine/install/linux-postinstall/). Membership in the `docker` group grants root-equivalent privileges.
 
 ---
 
@@ -84,8 +95,8 @@ git push -u origin main
 ### Step 2: Start Jenkins in a container
 
 ```bash
-docker compose up -d --build
-docker compose logs -f jenkins      # wait until you see "Jenkins is fully up and running"
+sudo docker compose up -d --build
+sudo docker compose logs -f jenkins      # wait until you see "Jenkins is fully up and running"
 ```
 
 - `up -d`: start in background.
@@ -94,7 +105,7 @@ docker compose logs -f jenkins      # wait until you see "Jenkins is fully up an
 ### Step 3: Unlock Jenkins
 
 ```bash
-docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+sudo docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
 ```
 
 Open **http://localhost:8080**, paste the password, choose **Install suggested plugins**, create your admin user.
@@ -231,7 +242,7 @@ docker run -d --name jenkins-demo-app --network cicd-net -p 5000:5000 jenkins-de
 | Problem | Cause / Fix |
 |---------|-------------|
 | `docker: not found` in the build | Jenkins image was not built with Docker CLI. Run `docker compose up -d --build`. |
-| `permission denied ... docker.sock` | Make sure `user: root` is in compose and the socket is mounted. On Linux check the socket path. |
+| `permission denied ... docker.sock` | Make sure the Docker service is running and the socket is mounted. The Jenkins container runs as root in this learning setup; on the host, run Docker commands with `sudo` or configure access using Docker's Linux post-installation instructions. |
 | `port is already allocated` (5000 or 8080) | Another program uses it. Stop it or change the left side of the port mapping, e.g. `5001:5000`. |
 | Smoke test cannot resolve `jenkins-demo-app` | Jenkins and the app must be on `cicd-net`. Check with `docker network inspect cicd-net`. |
 | Cannot clone repo | Repo is private. Add credentials in Jenkins (Manage Jenkins -> Credentials) and select them in the job. |
